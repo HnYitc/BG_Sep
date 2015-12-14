@@ -48,31 +48,33 @@ public:
     }
 
     // Draw an example circle on the video stream
-    if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
-      cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
+    //if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
+    //  cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
 
     // Update GUI Window
-    cv::imshow(OPENCV_WINDOW, cv_ptr->image);
+//    cv::imshow(OPENCV_WINDOW, cv_ptr->image);
 
     int key = cv::waitKey(1);
 
+    static Mat currImg = Mat::zeros(cv::Size(cv_ptr->image.cols,cv_ptr->image.rows), CV_8U);
     static Mat bgImg = Mat::zeros(cv::Size(cv_ptr->image.cols,cv_ptr->image.rows), CV_8U);
     static Mat clcImg = Mat::zeros(cv::Size(cv_ptr->image.cols,cv_ptr->image.rows), CV_8U);
 
     double ratio = 0;
 
-    if(key == 's'){
 
-      for (int y = 0; y < cv_ptr->image.rows; y++) {
-        for (int x = 0; x < cv_ptr->image.cols; x++) {
+    for (int y = 0; y < cv_ptr->image.rows; y++) {
+      for (int x = 0; x < cv_ptr->image.cols; x++) {
 
-          bgImg.at<uchar>(y,x) = cv_ptr->image.at<Vec3b>(y, x)[2];
+        currImg.at<uchar>(y,x) = cv_ptr->image.at<Vec3b>(y, x)[2];
 
-        }
       }
+    }
 
+    if(key == 's'){
+      bgImg = currImg.clone();
       cout << "bgImage captured!\n" << endl;
-
+      imwrite("s.bmp", bgImg);
     }
 
     for (int y = 0; y < cv_ptr->image.rows; y++) {
@@ -88,7 +90,7 @@ public:
     if(key == 'd') ts = ts - 1;
 
     threshold( clcImg, clcImg, ts, 255, THRESH_BINARY);
-
+    
     double sum = 0;
     int count = 0;
     for (int y = 0; y < cv_ptr->image.rows; y++) {
@@ -96,18 +98,28 @@ public:
 
         int v = clcImg.at<uchar>(y,x);
         sum += (double)v;
-        count++;
+      count++;
 
       }
     }
     ratio = sum/(double)count;
-
-    cout << "ratio:" << ratio << "\n" << endl;
-
     
+    cout << "ratio:" << ratio << "\n" << endl;
+    stringstream ss;
+    ss << ratio;
+    putText(clcImg, ss.str(), cv::Point(50,50), FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255,255,255), 2, CV_AA); 
 
-    cv::imshow("bgImg", bgImg);
-    cv::imshow("clcImg", clcImg);
+    if(key == 'c'){
+       imwrite("c.bmp", clcImg);
+       imwrite("n.bmp", currImg);
+       return;
+    }
+
+    Mat min_bgImg, min_clcImg;
+    //resize(bgImg,min_bgImg,Size(),0.5,0.5,INTER_LINEAR);
+    resize(clcImg,min_clcImg,Size(),0.5,0.5,INTER_LINEAR);
+    //cv::imshow("bgImg", min_bgImg);
+    cv::imshow("clcImg", min_clcImg);
 
     // Output modified video stream
     //image_pub_.publish(cv_ptr->toImageMsg());
